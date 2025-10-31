@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Products – BlockCraft Emporium</title>
+    <meta name="description" content="Explore our Minecraft-inspired products" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Roboto&display=swap" rel="stylesheet">
+    <!-- global site styles (keeps header/footer identical to index) -->
+    <link rel="stylesheet" href="style.css">
+    <!-- product page specific styles -->
+    <link rel="stylesheet" href="product.css">
+</head>
+<body>
+    <header id="top">
+        <div class="wrap">
+            <a class="brand" href="index.html">
+                <img src="images/logo.png" alt="BlockCraft Logo" class="logo">
+                <b>BlockCraft Emporium</b>
+            </a>
+
+            <nav>
+                <a class="btn" href="index.html">Home</a>
+                <a class="btn" href="about.html">About</a>
+                <a class="btn" href="index.html#showcase">Showcase</a>
+            </nav>
+
+            <!-- Cart indicator (visual) -->
+            <div class="cart-indicator" aria-hidden="false">
+                <button class="cart-btn" aria-label="Open cart"><span class="cart-icon">🛒</span> <span class="cart-count">0</span></button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Page hero -->
+        <section class="page-hero">
+            <div class="inner">
+                <div class="breadcrumb"><a href="index.html">Home</a> <span>›</span> Products</div>
+                <h1>Our Products</h1>
+                <p class="muted">Hand-picked Minecraft merch — pixel-perfect quality</p>
+            </div>
+        </section>
+
+        <!-- Products list -->
+        <section class="products product-page" aria-label="Products">
+            <div class="product-grid" role="list">
+                <article class="card" role="listitem" data-id="diamond_sword" data-price="500">
+                    <div class="badge">Popular</div>
+                    <img src="images/diamond_sword.png" alt="Diamond Sword">
+                    <div class="pad">
+                        <h3 class="title">Diamond Sword</h3>
+                        <p class="meta">Sharp and shiny!</p>
+                        <div class="row">
+                            <span class="price">₱500</span>
+                            <button class="add" aria-label="Add Diamond Sword">Add</button>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="card" role="listitem" data-id="creeper_plush" data-price="350">
+                    <div class="badge">Limited</div>
+                    <img src="images/creeper_plush.png" alt="Creeper Plush">
+                    <div class="pad">
+                        <h3 class="title">Creeper Plush</h3>
+                        <p class="meta">Soft but explosive!</p>
+                        <div class="row">
+                            <span class="price">₱350</span>
+                            <button class="add" aria-label="Add Creeper Plush">Add</button>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="card" role="listitem" data-id="redstone_kit" data-price="420">
+                    <div class="badge">New</div>
+                    <img src="images/redstone_kit.png" alt="Redstone Kit">
+                    <div class="pad">
+                        <h3 class="title">Redstone Kit</h3>
+                        <p class="meta">Power your builds.</p>
+                        <div class="row">
+                            <span class="price">₱420</span>
+                            <button class="add" aria-label="Add Redstone Kit">Add</button>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <!-- Cart drawer + overlay -->
+    <div class="cart-overlay" id="cartOverlay" hidden></div>
+
+    <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+        <header class="cart-header">
+            <div class="cart-title">Your Cart</div>
+            <button class="cart-close" aria-label="Close cart">✕</button>
+        </header>
+
+        <div class="cart-body" id="cartItems">
+            <!-- Items populated by JS -->
+            <div class="cart-empty">Your cart is empty.</div>
+        </div>
+
+        <footer class="cart-footer">
+            <div class="cart-summary">
+                <div>Subtotal</div>
+                <div class="cart-subtotal">₱0</div>
+            </div>
+            <div class="cart-actions">
+                <button class="btn checkout-btn" id="checkoutBtn">Checkout</button>
+                <button class="btn ghost clear-cart-btn" id="clearCartBtn">Clear</button>
+            </div>
+        </footer>
+    </aside>
+
+    <footer>
+        <div class="foot">
+            <div>© 2025 BlockCraft Emporium — Owner: Clarence Magante</div>
+            <div class="right"><a href="#top">Back to top ↑</a></div>
+        </div>
+    </footer>
+
+    <script>
+        const CART_KEY = 'bc_cart_v1';
+
+        function getCart() {
+            try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); }
+            catch { return []; }
+        }
+
+        function saveCart(cart) {
+            localStorage.setItem(CART_KEY, JSON.stringify(cart));
+            updateCartCount();
+            renderCart();
+        }
+
+        function addToCart(item) {
+            if (!item || !item.id) return;
+            const cart = getCart();
+            const existing = cart.find(i => i.id === item.id);
+            if (existing) existing.qty = (existing.qty || 0) + (item.qty || 1);
+            else cart.push({ id: item.id, title: item.title || '', price: Number(item.price) || 0, qty: item.qty || 1 });
+            saveCart(cart);
+        }
+
+        function updateCartCount() {
+            const cart = getCart();
+            const totalQty = cart.reduce((s, i) => s + (i.qty || 0), 0);
+            document.querySelectorAll('.cart-count').forEach(el => el.textContent = totalQty);
+        }
+
+        // get product DOM data (image/title/price) by id
+        function getProductData(id) {
+            const article = document.querySelector(`article[data-id="${id}"]`);
+            if (!article) return {};
+            const img = article.querySelector('img')?.getAttribute('src') || '';
+            const title = article.querySelector('.title')?.textContent.trim() || id;
+            const price = Number(article.dataset.price || (article.querySelector('.price')?.textContent.replace(/[^\d.]/g, '') || 0));
+            return { id, img, title, price };
+        }
+
+        // Cart drawer controls
+        const cartOverlay = document.getElementById('cartOverlay');
+        const cartDrawer = document.getElementById('cartDrawer');
+
+        function openCart() {
+            cartOverlay.hidden = false;
+            cartDrawer.setAttribute('aria-hidden', 'false');
+            document.documentElement.style.overflow = 'hidden';
+            setTimeout(() => {
+                cartOverlay.classList.add('visible');
+                cartDrawer.classList.add('open');
+            }, 10);
+            renderCart();
+        }
+
+        function closeCart() {
+            cartDrawer.classList.remove('open');
+            cartOverlay.classList.remove('visible');
+            cartDrawer.setAttribute('aria-hidden', 'true');
+            document.documentElement.style.overflow = '';
+            setTimeout(() => cartOverlay.hidden = true, 280);
+        }
+
+        // render cart contents
+        function renderCart() {
+            const container = document.getElementById('cartItems');
+            container.innerHTML = '';
+            const cart = getCart();
+            if (!cart.length) {
+                container.innerHTML = '<div class="cart-empty">Your cart is empty.</div>';
+                document.querySelector('.cart-subtotal').textContent = '₱0';
+                return;
+            }
+
+            let subtotal = 0;
+            cart.forEach(item => {
+                const p = getProductData(item.id);
+                const line = document.createElement('div');
+                line.className = 'cart-item';
+                line.dataset.id = item.id;
+                const lineTotal = (item.price * (item.qty || 0));
+                subtotal += lineTotal;
+
+                line.innerHTML = `
+                            <img src="${p.img}" alt="${item.title}" class="cart-item-thumb">
+                            <div class="cart-item-meta">
+                                <div class="cart-item-title">${item.title}</div>
+                                <div class="cart-item-price">₱${item.price}</div>
+                                <div class="cart-item-controls">
+                                    <button class="qty-btn qty-minus" aria-label="Decrease quantity">−</button>
+                                    <input class="qty-input" type="number" min="1" value="${item.qty}">
+                                    <button class="qty-btn qty-plus" aria-label="Increase quantity">+</button>
+                                    <button class="remove-btn" aria-label="Remove item">Remove</button>
+                                </div>
+                            </div>
+                            <div class="cart-item-total">₱${lineTotal}</div>
+                        `;
+                container.appendChild(line);
+            });
+
+            document.querySelector('.cart-subtotal').textContent = `₱${subtotal}`;
+        }
+
+        // update quantity helper
+        function updateCartItemQty(id, qty) {
+            const cart = getCart();
+            const item = cart.find(i => i.id === id);
+            if (!item) return;
+            item.qty = Math.max(1, Math.floor(qty));
+            saveCart(cart);
+        }
+
+        function removeCartItem(id) {
+            let cart = getCart();
+            cart = cart.filter(i => i.id !== id);
+            saveCart(cart);
+        }
+
+        function clearCart() {
+            saveCart([]);
+        }
+
+        // wire cart button
+        document.querySelectorAll('.cart-btn').forEach(btn => btn.addEventListener('click', openCart));
+        cartOverlay.addEventListener('click', closeCart);
+        document.querySelectorAll('.cart-close').forEach(b => b.addEventListener('click', closeCart));
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && cartDrawer.classList.contains('open')) closeCart(); });
+
+        // delegated handlers inside drawer (qty change, remove)
+        document.getElementById('cartDrawer').addEventListener('click', (e) => {
+            const plus = e.target.closest('.qty-plus');
+            const minus = e.target.closest('.qty-minus');
+            const remove = e.target.closest('.remove-btn');
+            const clear = e.target.closest('#clearCartBtn');
+            const checkout = e.target.closest('#checkoutBtn');
+
+            if (plus || minus) {
+                const itemEl = e.target.closest('.cart-item');
+                const id = itemEl?.dataset.id;
+                const input = itemEl.querySelector('.qty-input');
+                let qty = Number(input.value || 1);
+                qty = plus ? qty + 1 : Math.max(1, qty - 1);
+                input.value = qty;
+                updateCartItemQty(id, qty);
+                renderCart();
+            }
+
+            if (remove) {
+                const itemEl = e.target.closest('.cart-item');
+                const id = itemEl?.dataset.id;
+                removeCartItem(id);
+            }
+
+            if (clear) {
+                if (confirm('Clear cart?')) clearCart();
+            }
+
+            if (checkout) {
+                // placeholder behavior
+                alert('Checkout not implemented in this demo.');
+            }
+        });
+
+        // also respond to manual qty input changes
+        document.getElementById('cartDrawer').addEventListener('change', (e) => {
+            if (e.target.classList.contains('qty-input')) {
+                const itemEl = e.target.closest('.cart-item');
+                const id = itemEl?.dataset.id;
+                const qty = Math.max(1, Math.floor(Number(e.target.value) || 1));
+                e.target.value = qty;
+                updateCartItemQty(id, qty);
+                renderCart();
+            }
+        });
+
+        // Add button behavior (delegated)
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.add');
+            if (!btn) return;
+            const article = btn.closest('article[data-id]');
+            if (!article) return;
+
+            const id = article.dataset.id;
+            const price = Number(article.dataset.price || 0);
+            const title = article.querySelector('.title')?.textContent.trim() || id;
+
+            // add and open cart
+            addToCart({ id, title, price, qty: 1 });
+            showToast('Added to cart', btn);
+            updateCartCount();
+        });
+
+        // initialise UI count on page load
+        document.addEventListener('DOMContentLoaded', updateCartCount);
+
+        // small toast function reused from previous implementation
+        function showToast(message, targetBtn) {
+            const toast = document.createElement('div');
+            toast.className = 'add-toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            if (targetBtn) {
+                const r = targetBtn.getBoundingClientRect();
+                toast.style.left = Math.max(8, r.left + (r.width / 2) - 60) + 'px';
+                toast.style.top = Math.max(8, r.top - 44) + 'px';
+            } else {
+                toast.style.left = '50%';
+                toast.style.transform = 'translateX(-50%)';
+                toast.style.top = '20px';
+            }
+
+            setTimeout(() => toast.classList.add('visible'), 10);
+            setTimeout(() => { toast.classList.remove('visible'); setTimeout(() => toast.remove(), 220); }, 1200);
+        }
+
+        // inject toast styles (kept here)
+        (function injectToastStyles() {
+            const css = `
+                        .add-toast {
+                            position: fixed;
+                            z-index: 1200;
+                            left: 50%;
+                            top: 16px;
+                            transform: translateX(-50%);
+                            background: rgba(0,0,0,0.85);
+                            color: #fff;
+                            padding: 8px 12px;
+                            border-radius: 8px;
+                            font-weight: 700;
+                            font-family: 'Roboto', sans-serif;
+                            opacity: 0;
+                            transition: opacity .18s, transform .18s;
+                            pointer-events: none;
+                            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+                        }
+                        .add-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+                        @media (max-width:720px) { .add-toast { left: 12px; transform: none; } }
+                    `;
+            const s = document.createElement('style');
+            s.appendChild(document.createTextNode(css));
+            document.head.appendChild(s);
+        })();
+    </script>
+</body>
+</html>
